@@ -1,0 +1,549 @@
+---
+title: "Industrial Survey"
+author: "Arturo Torre"
+date: "23/10/2018"
+output: html_document
+---
+## Mexican Industrial Survey {.tabset .tabset-fade .tabset-pills}
+
+###Intro
+
+```{r, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(magrittr)
+library(tidyr)
+library(knitr)
+library(reshape)
+library(viridis)
+library(gridExtra)
+library (scales)
+```
+
+```{r}
+#We load the data imported directly from INEGI´s website. 
+datos <- read.csv(file="datos.csv", header=TRUE, sep=",")
+```
+It is important to mention that we have aggregated variables by sector and subsector. 
+
+
+```{r, include=FALSE}
+#We will also load the dictionary from INEGI´s website to know the meaning of column names.
+diccionario <- read.csv(file="diccionario.csv", header=TRUE, sep=",")
+
+head(diccionario)
+```
+
+As we can see we have worked hours, number of employees, supplies imported among many other variables.
+
+Notice that data provided by INEGI presents different levels of aggregation. Following NAICS system we have information a 2,4 and/or 6 figure code. This survey also includes a general category named 31-33 which aggregates all the available information. We will start with a general overview of the Mexican Industry followed by particular industry analysis. 
+
+We will follow Hadley Wickham´s tidy data format mainly by subsetting particular data from the survey´s raw data.
+
+
+###General Industrial Manufacturing
+```{r}
+manuf <- datos %>% select(CODIGO_SCIAN, ANIO, H010B, H010C) %>% filter(CODIGO_SCIAN %in% c("31-33"))
+```
+In this section we will analyse the general overview of industrial manufacturing in Mexico. 
+
+```{r}
+#For easy handing we must use the tidy data paradigm
+manuf_tidy <- manuf %>% gather(Genero,Numero,H010B:H010C) 
+manuf_tidy$Genero[manuf_tidy$Genero == "H010B"] <- "Hombres"
+manuf_tidy$Genero[manuf_tidy$Genero == "H010C"] <- "Mujeres"
+```
+
+
+```{r,include=FALSE}
+manuf1 <-  ggplot(data = manuf_tidy, aes(x=ANIO, y=Numero, color=Genero)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Número de Empleados') +
+  ggtitle("Empleados divididos por género en la industria manufacturera") +
+  theme(plot.title = element_text(hjust = 0.5))  +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+manuf1 
+```
+
+```{r}
+manuf_ins <- datos %>% select(CODIGO_SCIAN, ANIO, K316B, K316C) %>% filter(CODIGO_SCIAN %in% c("31-33"))
+```
+
+```{r}
+#For easy handing we must use the tidy data paradigm
+manuf_tidy <- manuf_ins %>% gather(Origen, Cantidad, K316B:K316C) 
+manuf_tidy$Origen[manuf_tidy$Origen == "K316B"] <- "Nacional"
+manuf_tidy$Origen[manuf_tidy$Origen == "K316C"] <- "Importado"
+```
+
+```{r,include=FALSE}
+manuf2 <-  ggplot(data = manuf_tidy, aes(x=ANIO, y=Cantidad, color=Origen)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Compra de materias primas') +
+  ggtitle("Volumen de Materias Primas en la industria manufacturera") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+manuf2 
+```
+
+```{r}
+manuf_vtas <- datos %>% select(CODIGO_SCIAN, ANIO, M310B, M310C) %>% filter(CODIGO_SCIAN %in% c("31-33"))
+```
+
+```{r}
+#For easy handing we must use the tidy data paradigm
+manuf_tidy <- manuf_vtas %>% gather(Destino, Ventas, M310B:M310C) 
+manuf_tidy$Destino[manuf_tidy$Destino == "M310B"] <- "Nacional"
+manuf_tidy$Destino[manuf_tidy$Destino == "M310C"] <- "Exportación"
+```
+
+```{r,include=FALSE}
+manuf3 <-  ggplot(data = manuf_tidy, aes(x=ANIO, y=Ventas, color=Destino)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Venta de productos finales') +
+  ggtitle("Destino de productos finales en la industria manufacturera") + 
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+manuf3 
+```
+At 6 figure level we 240 different industries.
+```{r, include=FALSE}
+inf <-c("311110",	"311211", "311212", "311213", "311215",	"311221",	"311222",	"311230",	"311311",	"311320",	"311330",	"311340",	"311411",	"311422",	"311423",	"311511",	"311512",	"311513",	"311611",	"311612",	"311613",	"311710",	"311811",	"311812",	"311820",	"311830",	"311910",	"311921",	"311922",	"311923",	"311930",	"311940",	"311991",	"311992",	"311999",	"312111",	"312112",	"312120",	"312131",	"312141",	"312142",	"312149",	"312210",	"312221",	"313112",	"313113",	"313210",	"313220",	"313230",	"313240",	"313310",	"313320",	"314110",	"314120",	"314911",	"314912",	"314992",	"314993",	"314999",	"315110",	"315191",	"315192",	"315221",	"315222",	"315223",	"315229",	"315991",	"315999",	"316110",	"316211",	"316212",	"316213",	"316991",	"316999",	"321111",	"321112",	"321113",	"321210",	"321910",	"321920",	"321993",	"322122",	"322132",	"322210",	"322220",	"322230",	"322291",	"322299",	"323111",	"323119",	"324110",	"324120",	"324191",	"325110",	"325120",	"325130",	"325180",	"325190",	"325211",	"325212",	"325220",	"325310",	"325320",	"325411",	"325412",	"325510",	"325520",	"325610",	"325620",	"325910",	"325991",	"325992",	"325999",	"326110",	"326120",	"326130",	"326140",	"326150",	"326160",	"326191",	"326192",	"326193",	"326194",	"326198",	"326199",	"326211",	"326220",	"326290",	"327112",	"327121",	"327122",	"327123",	"327211",	"327213",	"327214",	"327215",	"327219",	"327310",	"327320",	"327330", "327391",	"327410",	"327420",	"327910",	"327991",	"327999",	"331111",	"331112",	"331210",	"331220",	"331310",	"331411",	"331412",	"331419",	"331420",	"331510",	"331520",	"332110",	"332211",	"332212",	"332310",	"332320",	"332410",	"332420",	"332430",	"332510",	"332610",	"332720",	"332810",	"332910",	"332991",	"332999",	"333111",	"333112",	"333120",	"333130",	"333220",	"333291",	"333292",	"333299",	"333319",	"333411",	"333412",	"333510",	"333610",	"333910",	"333920",	"333991",	"333992",	"333999",	"334110",	"334210",	"334220",	"334290",	"334310",	"334410",	"334519",	"334610",	"335110",	"335120",	"335210",	"335220",	"335311",	"335312",	"335910",	"335920",	"335930",	"335991",	"335999",	"336110",	"336120",	"336210",	"336310",	"336320",	"336330",	"336340",	"336350",	"336360",	"336370",	"336390",	"336410",	"336510",	"336610",	"336991", "336992",	"337120",	"337210",	"337910",	"337920",	"339111",	"339112",	"339113",	"339912",	"339920",	"339930",	"339940",	"339992",	"339993",	"339994",	"339999")
+```
+
+```{r, include=FALSE}
+manuf_6 <- datos %>% select(CODIGO_SCIAN, ANIO, M310B, M310C) %>% filter(CODIGO_SCIAN %in% c(inf))
+```
+
+```{r, include=FALSE}
+#To see if all the 6-digit categories match in both groups
+inf[!(inf %in% manuf_6$CODIGO_SCIAN)]
+```
+
+
+
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+
+manuf_tidy_6vtas <- manuf_6 %>% gather(Destino, Ventas, M310B:M310C) 
+manuf_tidy_6vtas$Destino[manuf_tidy_6vtas$Destino == "M310B"] <- "Nacional"
+manuf_tidy_6vtas$Destino[manuf_tidy_6vtas$Destino == "M310C"] <- "Exportación"
+#We filter for 2016 values
+manuf_tidy_6vtas <- manuf_tidy_6vtas %>% filter (ANIO==2016)
+#We add a column named group
+manuf_tidy_6vtas$group <- substr(manuf_tidy_6vtas$CODIGO_SCIAN, 0, 3)
+manuf_tidy_6vtas$group <- as.factor(manuf_tidy_6vtas$group)
+manuf_tidy_6vtas <- manuf_tidy_6vtas %>% select(CODIGO_SCIAN, Destino, Ventas, group)
+```
+
+```{r, include=FALSE}
+# Set a number of 'empty bar' to add at the end of each group
+empty_bar=2
+nObsType=nlevels(as.factor(manuf_tidy_6vtas$Destino))
+to_add = data.frame( matrix(NA, empty_bar*nlevels(manuf_tidy_6vtas$group)*nObsType, ncol(manuf_tidy_6vtas)) )
+colnames(to_add) = colnames(manuf_tidy_6vtas)
+to_add$group=rep(levels(manuf_tidy_6vtas$group), each=empty_bar*nObsType )
+data=rbind(manuf_tidy_6vtas, to_add)
+data=data %>% arrange(group, CODIGO_SCIAN)
+data$id=rep( seq(1, nrow(data)/nObsType) , each=nObsType) 
+data <- data %>%filter(complete.cases(.)) 
+data$Ventas <- as.numeric(data$Ventas)
+```
+
+
+```{r, include=FALSE}
+g <- ggplot(data, aes(x =reorder(CODIGO_SCIAN, -Ventas), y = Ventas))  +
+         geom_bar(stat = "identity", aes(fill = Destino)) +
+         theme(axis.text.x = element_text(angle = 60, hjust=1)) +
+         coord_flip() +
+         xlab('Código SCIAN') 
+```
+
+```{r, fig.height = 25, fig.width=5}
+g
+```
+
+Lets make a deeper analysis in on heavy industry(defined by the Ministry of Economy as industries classified from 333 to 336) which are key in Mexican domestic industry.
+
+
+###Automotive
+```{r, include=FALSE}
+auto <- datos %>% select(CODIGO_SCIAN, ANIO, H010B, H010C) %>% filter(CODIGO_SCIAN %in% c("336"))
+```
+In this section we will analyse the automotive industry in Mexico. 
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+auto_tidy <- auto %>% gather(Genero,Numero,H010B:H010C) 
+auto_tidy$Genero[auto_tidy$Genero == "H010B"] <- "Hombres"
+auto_tidy$Genero[auto_tidy$Genero == "H010C"] <- "Mujeres"
+```
+
+
+```{r,include=FALSE}
+auto1 <-  ggplot(data = auto_tidy, aes(x=ANIO, y=Numero, color=Genero)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Número de Empleados') +
+  ggtitle("Empleados divididos por género en la industria automotriz") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+  
+```
+
+
+```{r}
+auto1 
+```
+
+```{r, include=FALSE}
+auto_ins <- datos %>% select(CODIGO_SCIAN, ANIO, K316B, K316C) %>% filter(CODIGO_SCIAN %in% c("336"))
+```
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+auto_tidy <- auto_ins %>% gather(Origen, Cantidad, K316B:K316C) 
+auto_tidy$Origen[auto_tidy$Origen == "K316B"] <- "Nacional"
+auto_tidy$Origen[auto_tidy$Origen == "K316C"] <- "Importado"
+```
+
+```{r,include=FALSE}
+auto2 <-  ggplot(data = auto_tidy, aes(x=ANIO, y=Cantidad, color=Origen)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Compra de materias primas') +
+  ggtitle("Volumen de Materias Primas en la industria automotriz") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+auto2 
+```
+
+```{r, include=FALSE}
+auto_vtas <- datos %>% select(CODIGO_SCIAN, ANIO, M310B, M310C) %>% filter(CODIGO_SCIAN %in% c("336"))
+```
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+auto_tidy <- auto_vtas %>% gather(Destino, Ventas, M310B:M310C) 
+auto_tidy$Destino[auto_tidy$Destino == "M310B"] <- "Nacional"
+auto_tidy$Destino[auto_tidy$Destino == "M310C"] <- "Exportación"
+```
+
+```{r,include=FALSE}
+auto3 <-  ggplot(data = auto_tidy, aes(x=ANIO, y=Ventas, color=Destino)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Venta de productos finales') +
+  ggtitle("Destino de productos finales en la industria automotriz") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+auto3 
+```
+
+###Electrical Equipment(including household appliances)
+```{r, include=FALSE}
+electrical <- datos %>% select(CODIGO_SCIAN, ANIO, H010B, H010C) %>% filter(CODIGO_SCIAN %in% c( "335"))
+```
+In this section we will analyse the electrical manufacturing industry in Mexico. 
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+electrical_tidy <- electrical %>% gather(Genero,Numero,H010B:H010C) 
+electrical_tidy$Genero[electrical_tidy$Genero == "H010B"] <- "Hombres"
+electrical_tidy$Genero[electrical_tidy$Genero == "H010C"] <- "Mujeres"
+```
+
+```{r,include=FALSE}
+electrical1 <-  ggplot(data = electrical_tidy, aes(x=ANIO, y=Numero, color=Genero)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Número de Empleados') +
+  ggtitle("Empleados divididos por género en la industria de manufacturas eléctricas") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+  
+```
+
+
+```{r}
+electrical1 
+```
+
+```{r, include=FALSE}
+electrical_ins <- datos %>% select(CODIGO_SCIAN, ANIO, K316B, K316C) %>% filter(CODIGO_SCIAN %in% c("335"))
+```
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+electrical_tidy <- electrical_ins %>% gather(Origen, Cantidad, K316B:K316C) 
+electrical_tidy$Origen[electrical_tidy$Origen == "K316B"] <- "Nacional"
+electrical_tidy$Origen[electrical_tidy$Origen == "K316C"] <- "Importado"
+```
+
+```{r,include=FALSE}
+electrical2 <-  ggplot(data = electrical_tidy, aes(x=ANIO, y=Cantidad, color=Origen)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Compra de materias primas') +
+  ggtitle("Volumen de Materias Primas en la industria de manufacturas eléctricas") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+electrical2 
+```
+
+```{r, include=FALSE}
+electrical_vtas <- datos %>% select(CODIGO_SCIAN, ANIO, M310B, M310C) %>% filter(CODIGO_SCIAN %in% c("335"))
+```
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+electrical_tidy <- electrical_vtas %>% gather(Destino, Ventas, M310B:M310C) 
+electrical_tidy$Destino[electrical_tidy$Destino == "M310B"] <- "Nacional"
+electrical_tidy$Destino[electrical_tidy$Destino == "M310C"] <- "Exportación"
+```
+
+```{r,include=FALSE}
+electrical3 <-  ggplot(data = electrical_tidy, aes(x=ANIO, y=Ventas, color=Destino)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Venta de productos finales') +
+  ggtitle("Destino de productos finales en la industria de manufacturas eléctricas") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+electrical3 
+```
+
+Despite its high international competitiveness this industry heavily relies on domestic market sales.
+
+
+###Electronics
+```{r, include=FALSE}
+electronics <- datos %>% select(CODIGO_SCIAN, ANIO, H010B, H010C) %>% filter(CODIGO_SCIAN %in% c("334"))
+```
+In this section we will analyse the electronics manufacturing industry in Mexico.
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+electronics_tidy <- electronics %>% gather(Genero,Numero,H010B:H010C) 
+electronics_tidy$Genero[electronics_tidy$Genero == "H010B"] <- "Hombres"
+electronics_tidy$Genero[electronics_tidy$Genero == "H010C"] <- "Mujeres"
+```
+
+
+```{r,include=FALSE}
+electronics1 <-  ggplot(data = electronics_tidy, aes(x=ANIO, y=Numero, color=Genero)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Número de Empleados') +
+  ggtitle("Empleados divididos por género en la industria electrónica") 
+  theme(plot.title = element_text(hjust = 0.5)) 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+  
+```
+
+
+```{r}
+electronics1 
+```
+
+Not surprinsingly consisten with many studies, women dominate the electronics labor market due to its quality during the manufacturing process.
+
+```{r, include=FALSE}
+electronics_ins <- datos %>% select(CODIGO_SCIAN, ANIO, K316B, K316C) %>% filter(CODIGO_SCIAN %in% c("334"))
+```
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+electronics_tidy <- electronics_ins %>% gather(Origen, Cantidad, K316B:K316C) 
+electronics_tidy$Origen[electronics_tidy$Origen == "K316B"] <- "Nacional"
+electronics_tidy$Origen[electronics_tidy$Origen == "K316C"] <- "Importado"
+```
+
+```{r,include=FALSE}
+electronics2 <-  ggplot(data = electronics_tidy, aes(x=ANIO, y=Cantidad, color=Origen)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Compra de materias primas') +
+  ggtitle("Volumen de Materias Primas en la industria electrónica") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+electronics2 
+```
+
+```{r, include=FALSE}
+electronics_vtas <- datos %>% select(CODIGO_SCIAN, ANIO, M310B, M310C) %>% filter(CODIGO_SCIAN %in% c("334"))
+```
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+electronics_tidy <- electronics_vtas %>% gather(Destino, Ventas, M310B:M310C) 
+electronics_tidy$Destino[electronics_tidy$Destino == "M310B"] <- "Nacional"
+electronics_tidy$Destino[electronics_tidy$Destino == "M310C"] <- "Exportación"
+```
+
+```{r,include=FALSE}
+electronics3 <-  ggplot(data = electronics_tidy, aes(x=ANIO, y=Ventas, color=Destino)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Venta de productos finales') +
+  ggtitle("Destino de productos finales en la industria electrónica") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+electronics3 
+```
+
+###Capital Goods
+```{r}
+cg <- datos %>% select(CODIGO_SCIAN, ANIO, H010B, H010C) %>% filter(CODIGO_SCIAN %in% c("333"))
+```
+In this section we will analyse the capital goods manufacturing industry in Mexico.
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+cg_tidy <- cg %>% gather(Genero,Numero,H010B:H010C) 
+cg_tidy$Genero[cg_tidy$Genero == "H010B"] <- "Hombres"
+cg_tidy$Genero[cg_tidy$Genero == "H010C"] <- "Mujeres"
+```
+
+
+```{r,include=FALSE}
+cg1 <-  ggplot(data = cg_tidy, aes(x=ANIO, y=Numero, color=Genero)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Número de Empleados') +
+  ggtitle("Empleados divididos por género en la industria de bienes de capital") 
+  theme(plot.title = element_text(hjust = 0.5)) 
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) 
+  
+```
+
+
+```{r}
+cg1 
+```
+
+```{r, include=FALSE}
+cg_ins <- datos %>% select(CODIGO_SCIAN, ANIO, K316B, K316C) %>% filter(CODIGO_SCIAN %in% c("333"))
+```
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+cg_tidy <- cg_ins %>% gather(Origen, Cantidad, K316B:K316C) 
+cg_tidy$Origen[cg_tidy$Origen == "K316B"] <- "Nacional"
+cg_tidy$Origen[cg_tidy$Origen == "K316C"] <- "Importado"
+```
+
+```{r,include=FALSE}
+cg2 <-  ggplot(data = cg_tidy, aes(x=ANIO, y=Cantidad, color=Origen)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Compra de materias primas') +
+  ggtitle("Volumen de Materias Primas en la industria de bienes de capital") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+cg2 
+```
+
+```{r, include=FALSE}
+cg_vtas <- datos %>% select(CODIGO_SCIAN, ANIO, M310B, M310C) %>% filter(CODIGO_SCIAN %in% c("333"))
+```
+
+```{r, include=FALSE}
+#For easy handing we must use the tidy data paradigm
+cg_tidy <- cg_vtas %>% gather(Destino, Ventas, M310B:M310C) 
+cg_tidy$Destino[cg_tidy$Destino == "M310B"] <- "Nacional"
+cg_tidy$Destino[cg_tidy$Destino == "M310C"] <- "Exportación"
+```
+
+```{r,include=FALSE}
+cg3 <-  ggplot(data = cg_tidy, aes(x=ANIO, y=Ventas, color=Destino)) + 
+  geom_line(size=5) +
+  xlab('Año') +
+  ylab('Venta de productos finales') +
+  ggtitle("Destino de productos finales en la industria de bienes de capital") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  scale_y_continuous(labels = comma)
+  
+```
+
+```{r}
+cg3 
+```
+
+###Geographical information
+
+We also downloaded the exports by state published by INEGI (https://www.inegi.org.mx/app/descarga/?t=0030002000000000&ag=00) to identify the geographical pattern in our country.
+
+
+```{r}
+
+```
+
+
+
+###Findings
+
+1.- Mexican heavy industry (333-336) heavily relies on imports for manufacturing. This suggests that despite a successful "maquiladora" program, efforts must conitnue to foster local suppliers.
+
+2.- Most employees are male, however electronics industry relies on female employees. 
+
+3.- Mexican heavy industry is focused on serving international markets mainly the US.
+
+4.- Total indsutry has a different pattern. It relies on domestic markets for supplying. The biggest share of sales are in the domestic market and most employees are men.
+
+
